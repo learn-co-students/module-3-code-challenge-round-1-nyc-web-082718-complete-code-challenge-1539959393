@@ -12,72 +12,86 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const commentsURL = `https://randopic.herokuapp.com/comments/`
 
-  // const loadPage = () => {
-  //   fetch(imageURL)
-  //     .then(resp => resp.json())
-  //     .then(imageJSON => {
-  //       document.getElementById('image_card').innerHTML = imageJSON.map(image => makeImageCard(image))
-  //     })
-  // }
-  //
-  // loadPage()
-
-  // Discouraging.
-})
-
-  likeCount = document.getElementById('likes').innerText
-// --- LOAD CONTENT END
-
-// MAKE IMAGE CARD START ---
-const makeImageCard = (image) => {
-  return `
-
-         `
-// This is where I would have put the image
-}
-// --- MAKE IMAGE CARD END
-
-// LIKE IMAGE CARD START ---
-const incrementLike = () => {
-  likeCount = ++likeCount
-}
-
-document.addEventListener('click', (event) => {
-  incrementLike()
-
-  if (event.target.id === 'like_button') {
-    fetch('https://randopic.herokuapp.com/likes/', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        image_id: 1214
-      })
-    })
-
-    document.getElementById('likes').innerText = likeCount
+  const loadPage = () => {
+    fetch(imageURL)
+      .then(resp => resp.json())
+      .then(imageJSON => inputData(imageJSON))
   }
-})
-// --- LIKE IMAGE CARD END
+  loadPage()
 
-document.addEventListener('click', (event) => {
+  function inputData(image) {
+    document.getElementById('image').src = image.url
+    document.getElementById('name').innerHTML = image.name
+    document.getElementById('likes').innerHTML = image.like_count
+    likeCount = image.like_count
+    addComments(image)
+  }
+  const addComments = (image) => {
+    document.getElementById('comments').innerHTML = ''
+    document.getElementById('comments').innerHTML = image.comments.sort((c1, c2) => c1.id > c2.id).map(comment => {
+      return `<li>${comment.content}</li>
+      <button class='delete' id='${comment.id}'>Delete Comment</button>
+      `
+    }).join('')
+  }
+  // LIKE IMAGE CARD START ---
+  const incrementLike = () => {
+    likeCount = ++likeCount
+  }
 
-  if (event.target.id === 'submit') {
+  document.addEventListener('click', (event) => {
+    incrementLike()
+
+    if (event.target.id === 'like_button') {
+      fetch(likeURL, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          image_id: imageId
+        })
+      })
+
+      document.getElementById('likes').innerText = likeCount
+    }
+  })
+  // --- LIKE IMAGE CARD END
+
+  // ADD COMMENT START ---
+  document.addEventListener('click', (event) => {
     event.preventDefault()
-    fetch('https://randopic.herokuapp.com/comments/', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        image_id: 1214,
-        content: 'placeholder content'
-      })
-    })
+    if (event.target.type === 'submit') {
+      const commentContent = document.getElementById('comment_input').value
 
-    // Here is where I would append the comment.
-  }
+      fetch(commentsURL, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          image_id: imageId,
+          content: commentContent
+        })
+      }).then(runLoadPage => loadPage())
+
+      event.target.parentElement.firstElementChild.value = ''
+    }
+  })
+  // --- ADD COMMENT END
+
+  // DELETE IMAGE START ---
+  document.addEventListener('click', (event) => {
+    if (event.target.className === 'delete') {
+
+      fetch(`https://randopic.herokuapp.com/comments/${event.target.id}`, {
+        method: 'DELETE',
+      }).then(runLoadPage => loadPage())
+    }
+  })
+  // --- DELETE IMAGE END
+
 })
+// --- LOAD CONTENT END
